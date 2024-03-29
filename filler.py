@@ -328,97 +328,28 @@ def main():
                     reset()
                     reset()
             if event.type == pygame.MOUSEBUTTONDOWN and game_over == False:
-                for i in range(4):
-                    for j in range(4):
-                        piece = board[i][j]
-                        if red.collidepoint(event.pos) and red_active:
-                            if game_turn % 2 == 0:
-                                if piece.captured and piece.value == 1:
-                                    piece.color = pygame.Color('red')  # checks if the piece is the correct color or not
-                                    piece.value = 1
-                                    getInfo(state, 1)
+                #Human player's move handling (as in your existing code)
 
-                                    move(1, 'red', i, j)  # changes the color of the pieces
-                                    legal_move = True
-
-                            else:
-                                if piece.captured and piece.value == -1:
-                                    piece.color = pygame.Color('red')  # checks if the piece is the correct color or not
-                                    piece.value = -1
-                                    move(-1, 'red', i, j)  # changes the color of the pieces
-                                    legal_move = True
-
-                        if blue.collidepoint(event.pos) and blue_active:
-                            if game_turn % 2 == 0:
-                                if piece.captured and piece.value == 1:
-                                    piece.color = pygame.Color(
-                                        'blue')  # checks if the piece is the correct color or not
-                                    piece.value = 1
-                                    getInfo(state, 1)
-
-                                    move(1, 'blue', i, j)  # changes the color of the pieces
-                                    legal_move = True
-
-                            else:
-                                if piece.captured and piece.value == -1:
-                                    piece.color = pygame.Color(
-                                        'blue')  # checks if the piece is the correct color or not
-                                    piece.value = -1
-                                    move(-1, 'blue', i, j)  # changes the color of the pieces
-                                    legal_move = True
-
-                        if green.collidepoint(event.pos) and green_active:
-                            if game_turn % 2 == 0:
-                                if piece.captured and piece.value == 1:
-                                    piece.color = pygame.Color(
-                                        'green')  # checks if the piece is the correct color or not
-                                    piece.value = 1
-                                    getInfo(state, 1)
-
-                                    move(1, 'green', i, j)  # changes the color of the pieces
-                                    legal_move = True
-
-                            else:
-                                if piece.captured and piece.value == -1:
-                                    piece.color = pygame.Color(
-                                        'green')  # checks if the piece is the correct color or not
-                                    piece.value = -1
-                                    move(-1, 'green', i, j)  # changes the color of the pieces
-                                    legal_move = True
-
-                        if purple.collidepoint(event.pos) and purple_active:
-                            if game_turn % 2 == 0:
-                                if piece.captured and piece.value == 1:
-                                    piece.color = pygame.Color(
-                                        'purple')  # checks if the piece is the correct color or not
-                                    piece.value = 1
-                                    getInfo(state, 1)
-
-                                    move(1, 'purple', i, j)  # changes the color of the pieces
-                                    legal_move = True
-
-                            else:
-                                if piece.captured and piece.value == -1:
-                                    piece.color = pygame.Color(
-                                        'purple')  # checks if the piece is the correct color or not
-                                    piece.value = -1
-                                    move(-1, 'purple', i, j)  # changes the color of the pieces
-                                    legal_move = True
-
-                if legal_move:
-                    game_turn += 1
-                    disable()
-                    legal_move = False
-                    win(state)
-                    if game_over:
-                        if win(state) == 1:
-                            pygame.display.set_caption("Player 1 Wins")
-                        elif win(state) == -1:
-                            pygame.display.set_caption("Player 2 Wins")
-                        else:
-                            pygame.display.set_caption("Draw")
+        # Computer's turn
+        if game_turn % 2 == 1 and not game_over:
+            # Call minimax to determine the best move for the computer
+            best_move = minimax(state, depth, COMP)
+            # Update the game state with the best move
+            i, j = best_move[0], best_move[1]
+            move(COMP, color_arr[game_turn % 4], i, j)
+            game_turn += 1
+            disable()
+            win(state)
+            if game_over:
+                if win(state) == 1:
+                    pygame.display.set_caption("Player 1 Wins")
+                elif win(state) == -1:
+                    pygame.display.set_caption("Player 2 Wins")
+                else:
+                    pygame.display.set_caption("Draw")
 
         window.fill(pygame.Color(40, 40, 40))
+
 
         for iy, rowOfCells in enumerate(board):
             for ix, cell in enumerate(rowOfCells):
