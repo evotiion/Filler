@@ -279,50 +279,32 @@ tries = 0
 
 
 def minimax(state, depth, player):
-    global tries
-
-    total = 0
-    tries += 1
-    if tries % 1000000 == 999999:
-        print(tries)
-
     if player == COMP:
-        best = [-1, -1, -infinity]
+        best = [-1, -1, -infinity]  # [row, col, value]
     else:
-        best = [-1, -1, +infinity]
+        best = [-1, -1, +infinity]  # [row, col, value]
 
-    if depth == 0 or game_over == True:
+    if depth == 0 or game_over:
         score = evaluate(state)
-        print("the score is: " + str(score))
-        if score == 1:
-            print("COMP WINS")
-        elif score == -1:
-            print("HUMAN WINS")
-        elif score == 0:
-            print("TIED")
-
         return [-1, -1, score]
 
     for i in range(4):
         for j in range(4):
             if state[i][j] == 0:
-                print("state: " + str(state))
-                total = minimax(state, depth - 1, -player)
-
+                state[i][j] = player
+                score = minimax(state, depth - 1, -player)
+                state[i][j] = 0
+                score[0], score[1] = i, j
 
                 if player == COMP:
-                    if total[2] > best[2]:
-                        best = total  # max value
-                        if best[2] == 1:
-                            return best
+                    if score[2] > best[2]:
+                        best = score  # Max value
                 else:
-                    if total[2] < best[2]:
-                        best = total  # min value
-                        if best[2] == -1:
-                            return best
-                
-                print("best: " + str(best))
-                return best
+                    if score[2] < best[2]:
+                        best = score  # Min value
+    print("best: " + str(best))
+    return best
+
 
 
 def main():
