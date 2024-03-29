@@ -328,7 +328,7 @@ def main():
                     reset()
                     reset()
             if event.type == pygame.MOUSEBUTTONDOWN and game_over == False:
-                #Human player's move handling (as in your existing code)
+                #try to implement the old human code
 
         # Computer's turn
         if game_turn % 2 == 1 and not game_over:
