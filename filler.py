@@ -1,7 +1,6 @@
 import pygame
 import random
-from math import inf as infinity
-
+import copy
 pygame.init()
 
 whiteText = (255, 255, 255)
@@ -12,6 +11,8 @@ purple = pygame.Rect(350, 640, 50, 50)
 red = pygame.Rect(400, 640, 50, 50)
 green = pygame.Rect(450, 640, 50, 50)
 blue = pygame.Rect(500, 640, 50, 50)
+
+
 
 color_arr = ['purple', 'red', 'green', 'blue']
 game_turn = 0
@@ -29,15 +30,12 @@ green_active = True
 red_active = True
 blue_active = True
 
-HUMAN = -1
-COMP = 1
 state = [[0, 0, 0, -1],
          [0, 0, 0, 0],
          [0, 0, 0, 0],
          [1, 0, 0, 0]]
 
 
-# creates the board
 def set_color():
     global red_count, blue_count, green_count, purple_count
     color = color_arr[random.randint(0, 3)]
@@ -220,92 +218,78 @@ def win(state):
 text_font = pygame.font.SysFont("Comic Sans MS", 30)
 
 
-def evaluate(state):
-    """
-    Function to heuristic evaluation of state.
-    :param state: the state of the current board
-    :return: +1 if the computer wins; -1 if the human wins; 0 draw
-    """
-    if wins(state) == 1:
-        score = +1
-    elif wins(state) == -1:
-        score = -1
-    else:
-        score = 0
-    #    print("in evaluate = " + str(score))
-    return score
-
-
-def wins(state):
-    humanScore = 0
-    computerScore = 0
-    for i in range(4):
-        for j in range(4):
-            if state[i][j] == 1:
-                computerScore += 1
-            if state[i][j] == -1:
-                humanScore += 1
-    print("the humanScore is: " + str(humanScore))
-    print("the computerScore is: " + str(computerScore))
-
-    if computerScore > humanScore:
-        return +1
-    elif computerScore < humanScore:
-        return -1
-    else:
-        return 0
-
-
 def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
     window.blit(img, (x, y))
 
-depth = 0
+def get_possible_moves(state, current_color):
+    possible_moves = []
+    opponent_color = -current_color
 
-def getInfo(state, player):
-    global depth
-    depth = 0
     for i in range(4):
         for j in range(4):
-            if state[i][j] == 0:
-                depth += 1
+            if state[i][j] == current_color:
+                # Check adjacent cells
+                if i > 0 and state[i - 1][j] != current_color and state[i - 1][j] != opponent_color:
+                    possible_moves.append((i - 1, j))
+                if i < 3 and state[i + 1][j] != current_color and state[i + 1][j] != opponent_color:
+                    possible_moves.append((i + 1, j))
+                if j > 0 and state[i][j - 1] != current_color and state[i][j - 1] != opponent_color:
+                    possible_moves.append((i, j - 1))
+                if j < 3 and state[i][j + 1] != current_color and state[i][j + 1] != opponent_color:
+                    possible_moves.append((i, j + 1))
+    return possible_moves
 
-    print("depth: " + str(depth))
 
-    minimax(state, depth, player)  # calls the minimax algorithm
+# Define a function to make a move and update the state
+def make_move(state, current_color, move):
+    new_state = copy.deepcopy(state)
+    i, j = move
+    new_state[i][j] = current_color
+    return new_state
 
+# Define a utility function to evaluate the state
+def evaluate_state(state, current_color):
+    score = 0
+    for row in state:
+        for cell in row:
+            if cell == current_color:
+                score += 1
+    return score
 
-tries = 0
+# Define the minimax algorithm
+def minimax(state, depth, max_player, current_color):
+    if depth == 0:
+        return evaluate_state(state, current_color)
 
-
-def minimax(state, depth, player):
-    if player == COMP:
-        best = [-1, -1, -infinity]  # [row, col, value]
+    possible_moves = get_possible_moves(state, current_color)
+    if max_player:
+        max_eval = float('-inf')
+        for move in possible_moves:
+            new_state = make_move(state, current_color, move)
+            eval = minimax(new_state, depth - 1, False, current_color)
+            max_eval = max(max_eval, eval)
+        return max_eval
     else:
-        best = [-1, -1, +infinity]  # [row, col, value]
+        min_eval = float('inf')
+        for move in possible_moves:
+            new_state = make_move(state, -current_color, move)
+            eval = minimax(new_state, depth - 1, True, current_color)
+            min_eval = min(min_eval, eval)
+        return min_eval
 
-    if depth == 0 or game_over:
-        score = evaluate(state)
-        return [-1, -1, score]
-
-    for i in range(4):
-        for j in range(4):
-            if state[i][j] == 0:
-                state[i][j] = player
-                score = minimax(state, depth - 1, -player)
-                state[i][j] = 0
-                score[0], score[1] = i, j
-
-                if player == COMP:
-                    if score[2] > best[2]:
-                        best = score  # Max value
-                else:
-                    if score[2] < best[2]:
-                        best = score  # Min value
-    print("best: " + str(best))
-    return best
-
-
+# Define a function to choose the best move using minimax
+def choose_best_move(state, current_color):
+    possible_moves = get_possible_moves(state, current_color)
+    best_move = None
+    best_eval = float('-inf')
+    for move in possible_moves:
+        new_state = make_move(state, current_color, move)
+        eval = minimax(new_state, 3, False, current_color)
+        if eval > best_eval:
+            best_eval = eval
+            best_move = move
+    return best_move
 
 def main():
     global game_turn
@@ -328,27 +312,86 @@ def main():
                     reset()
                     reset()
             if event.type == pygame.MOUSEBUTTONDOWN and game_over == False:
-                #try to implement the old human code
+                for i in range(4):
+                    for j in range(4):
+                        piece = board[i][j]
+                        if red.collidepoint(event.pos) and red_active:
+                            if game_turn % 2 == 0:
+                                if piece.captured and piece.value == 1:
+                                    piece.color = pygame.Color('red')
+                                    piece.value = 1
+                                    move(1, 'red', i, j)
+                                    legal_move = True
 
-        # Computer's turn
-        if game_turn % 2 == 1 and not game_over:
-            # Call minimax to determine the best move for the computer
-            best_move = minimax(state, depth, COMP)
-            # Update the game state with the best move
-            i, j = best_move[0], best_move[1]
-            move(COMP, color_arr[game_turn % 4], i, j)
-            game_turn += 1
-            disable()
-            win(state)
-            if game_over:
-                if win(state) == 1:
-                    pygame.display.set_caption("Player 1 Wins")
-                elif win(state) == -1:
-                    pygame.display.set_caption("Player 2 Wins")
-                else:
-                    pygame.display.set_caption("Draw")
+                            else:
+                                if piece.captured and piece.value == -1:
+                                    piece.color = pygame.Color('red')
+                                    piece.value = -1
+                                    move(-1, 'red', i, j)
+                                    legal_move = True
+
+                        if blue.collidepoint(event.pos) and blue_active:
+                            if game_turn % 2 == 0:
+                                if piece.captured and piece.value == 1:
+                                    piece.color = pygame.Color('blue')
+                                    piece.value = 1
+                                    move(1, 'blue', i, j)
+                                    legal_move = True
+
+                            else:
+                                if piece.captured and piece.value == -1:
+                                    piece.color = pygame.Color('blue')
+                                    piece.value = -1
+                                    move(-1, 'blue', i, j)
+                                    legal_move = True
+
+                        if green.collidepoint(event.pos) and green_active:
+                            if game_turn % 2 == 0:
+                                if piece.captured and piece.value == 1:
+                                    piece.color = pygame.Color('green')
+                                    piece.value = 1
+                                    move(1, 'green', i, j)
+                                    legal_move = True
+
+                            else:
+                                if piece.captured and piece.value == -1:
+                                    piece.color = pygame.Color('green')
+                                    piece.value = -1
+                                    move(-1, 'green', i, j)
+                                    legal_move = True
+
+                        if purple.collidepoint(event.pos) and purple_active:
+                            if game_turn % 2 == 0:
+                                if piece.captured and piece.value == 1:
+                                    piece.color = pygame.Color('purple')
+                                    piece.value = 1
+                                    move(1, 'purple', i, j)
+                                    legal_move = True
+
+                            else:
+                                if piece.captured and piece.value == -1:
+                                    piece.color = pygame.Color('purple')
+                                    piece.value = -1
+                                    move(-1, 'purple', i, j)
+                                    legal_move = True
+
+                if legal_move:
+                    best_move = choose_best_move(state, -1)  # Assume AI is always -1
+                    print(str(best_move))
+                    game_turn += 1
+                    disable()
+                    legal_move = False
+                    win(state)
+                    if game_over:
+                        if win(state) == 1:
+                            pygame.display.set_caption("Player 1 Wins")
+                        elif win(state) == -1:
+                            pygame.display.set_caption("Player 2 Wins")
+                        else:
+                            pygame.display.set_caption("Draw")
 
         window.fill(pygame.Color(40, 40, 40))
+
 
 
         for iy, rowOfCells in enumerate(board):
@@ -365,6 +408,8 @@ def main():
                     pygame.draw.rect(window, pygame.Color("grey"), pygame.Rect(ix * 150 + 150, iy * 150 + 1, 148, 148),
                                      4)
 
+
+
         pygame.draw.rect(window, [255, 0, 0], red)
         pygame.draw.rect(window, [0, 0, 255], blue)
         pygame.draw.rect(window, [0, 255, 0], green)
@@ -380,7 +425,7 @@ def main():
             pygame.draw.rect(window, pygame.Color('black'), purple, 1)
 
         draw_text("Player One Score:" + str(playerOneScore), text_font, pygame.Color("white"), 25, 650)
-        draw_text("Player Two Score:" + str(playerTwoScore), text_font, pygame.Color("grey"), 600, 650)
+        draw_text("Player Two Score:"+ str(playerTwoScore), text_font, pygame.Color("grey"), 600, 650)
         pygame.display.flip()
 
 
